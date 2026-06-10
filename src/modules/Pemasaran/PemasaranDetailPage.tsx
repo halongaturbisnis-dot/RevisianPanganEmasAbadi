@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { DetailShell } from '../../ui/components/common/shells/DetailShell';
 import { pemasaranService, IPemasaranWithCustomer } from '../../logic/services/pemasaranService';
 import { akunService } from '../../logic/services/akunService';
@@ -19,6 +19,8 @@ export const PemasaranDetailPage: React.FC = () => {
   const isMobile = state.viewport.isMobile;
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const referrer = searchParams.get('referrer');
 
   const [data, setData] = useState<IPemasaranWithCustomer | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,7 +43,7 @@ export const PemasaranDetailPage: React.FC = () => {
         setData(result);
       } else {
         toast.error('Data kunjungan tidak ditemukan');
-        navigate('/pemasaran');
+        navigate(referrer || '/pemasaran');
       }
     } catch (err) {
       toast.error('Gagal mengambil detail kunjungan pemasaran');
@@ -66,7 +68,7 @@ export const PemasaranDetailPage: React.FC = () => {
         const success = await pemasaranService.delete(data.id);
         if (success) {
           swalToast.fire({ icon: 'success', title: 'Data kunjungan pemasaran berhasil dihapus' });
-          navigate('/pemasaran');
+          navigate(referrer || '/pemasaran');
         } else {
           swalToast.fire({ icon: 'error', title: 'Gagal menghapus data kunjungan' });
         }
@@ -94,8 +96,8 @@ export const PemasaranDetailPage: React.FC = () => {
     <DetailShell
       id="pemasaran-detail-shell"
       title="Detail Laporan Kunjungan"
-      onBack={() => navigate('/pemasaran')}
-      onEdit={isCreator ? () => navigate(`/pemasaran/edit/${data.id}`) : undefined}
+      onBack={() => navigate(referrer || '/pemasaran')}
+      onEdit={isCreator ? () => navigate(`/pemasaran/edit/${data.id}${referrer ? `?referrer=${encodeURIComponent(referrer)}` : ''}`) : undefined}
       onDelete={isCreator ? handleDelete : undefined}
     >
       <div className="flex flex-col gap-4 sm:gap-6 w-full text-left pb-20">

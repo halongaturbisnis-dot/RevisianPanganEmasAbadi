@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { DetailShell } from '../../../../ui/components/common/shells/DetailShell';
 import { pengeluaranService } from '../../../../logic/services/pengeluaranService';
 import { bankAndCashService } from '../../../../logic/services/bankAndCashService';
@@ -24,6 +24,8 @@ import { FileText, Download, Calendar, Wallet, Tag, CheckCircle, XCircle, File a
 export const PengeluaranDetailPage: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const referrer = searchParams.get('referrer');
   const [data, setData] = useState<IPengeluaran | null>(null);
   const [sourceBank, setSourceBank] = useState<IBankAndCash | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -46,7 +48,7 @@ export const PengeluaranDetailPage: React.FC = () => {
         setSourceBank(bank);
       } else {
         toast.error('Data tidak ditemukan');
-        navigate('/finansial/pengeluaran');
+        navigate(referrer || '/finansial/pengeluaran');
       }
     } catch (error) {
       toast.error('Gagal memuat data');
@@ -72,7 +74,7 @@ export const PengeluaranDetailPage: React.FC = () => {
         const success = await pengeluaranService.delete(id);
         if (success) {
           swalToast.fire({ icon: 'success', title: 'Data berhasil dihapus' });
-          navigate('/finansial/pengeluaran');
+          navigate(referrer || '/finansial/pengeluaran');
         } else {
           swalToast.fire({ icon: 'error', title: 'Gagal menghapus data' });
         }
@@ -109,7 +111,7 @@ export const PengeluaranDetailPage: React.FC = () => {
       id="pengeluaran-detail-shell"
       title="Detail Pengeluaran"
       subtitle="Informasi lengkap mengenai transaksi operasional."
-      onBack={() => navigate('/finansial/pengeluaran')}
+      onBack={() => navigate(referrer || '/finansial/pengeluaran')}
     >
       <div className="flex flex-col gap-8 w-full max-w-5xl mx-auto pb-8 animate-in fade-in slide-in-from-bottom-2 duration-DurationMid">
         

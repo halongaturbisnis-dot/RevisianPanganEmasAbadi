@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { DetailShell } from '../../../../ui/components/common/shells/DetailShell';
 import { pemasukanService } from '../../../../logic/services/pemasukanService';
 import { bankAndCashService } from '../../../../logic/services/bankAndCashService';
@@ -24,6 +24,8 @@ import { FileText, Download, Calendar, Wallet, Tag, CheckCircle, XCircle, File a
 export const PemasukanDetailPage: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const referrer = searchParams.get('referrer');
   const [data, setData] = useState<IPemasukan | null>(null);
   const [sourceBank, setSourceBank] = useState<IBankAndCash | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -46,7 +48,7 @@ export const PemasukanDetailPage: React.FC = () => {
         setSourceBank(bank);
       } else {
         toast.error('Data tidak ditemukan');
-        navigate('/finansial/pemasukan');
+        navigate(referrer || '/finansial/pemasukan');
       }
     } catch (error) {
       toast.error('Gagal memuat data');
@@ -72,7 +74,7 @@ export const PemasukanDetailPage: React.FC = () => {
         const success = await pemasukanService.delete(id);
         if (success) {
           swalToast.fire({ icon: 'success', title: 'Data berhasil dihapus' });
-          navigate('/finansial/pemasukan');
+          navigate(referrer || '/finansial/pemasukan');
         } else {
           swalToast.fire({ icon: 'error', title: 'Gagal menghapus data' });
         }
@@ -109,7 +111,7 @@ export const PemasukanDetailPage: React.FC = () => {
       id="pemasukan-detail-shell"
       title="Detail Pemasukan"
       subtitle="Informasi lengkap mengenai transaksi pemasukan (Revenue)."
-      onBack={() => navigate('/finansial/pemasukan')}
+      onBack={() => navigate(referrer || '/finansial/pemasukan')}
     >
       <div className="flex flex-col gap-8 w-full max-w-5xl mx-auto pb-8 animate-in fade-in slide-in-from-bottom-2 duration-DurationMid">
         
