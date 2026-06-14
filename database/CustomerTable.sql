@@ -1,9 +1,29 @@
 -- Table: customer
 -- Description: Menyimpan data pembeli/pelanggan untuk modul Customer.
--- Standard: Mengikuti aturan DatabaseRule.md
+-- Standard: Mengikuti aturan DatabaseRule.md dengan pola Shadow Table Migration
 
+PRAGMA foreign_keys = OFF;
+
+-- 1. [PENTING] Handler Baseline
 CREATE TABLE IF NOT EXISTS customer (
-    -- Identitas Unik (UUID v4)
+    id TEXT PRIMARY KEY,
+    name TEXT,
+    company TEXT,
+    telepon TEXT,
+    email TEXT,
+    latlong TEXT,
+    alamat TEXT,
+    bidang_usaha TEXT,
+    created_at DATETIME,
+    created_by TEXT,
+    created_timezone TEXT,
+    updated_at DATETIME,
+    updated_by TEXT,
+    updated_timezone TEXT
+);
+
+-- 2. Buat tabel bayangan
+CREATE TABLE IF NOT EXISTS customer_new (
     id TEXT PRIMARY KEY DEFAULT (
         lower(hex(randomblob(4))) || '-' || 
         lower(hex(randomblob(2))) || '-4' || 
@@ -18,24 +38,42 @@ CREATE TABLE IF NOT EXISTS customer (
     company TEXT,
     telepon TEXT NOT NULL,
     email TEXT,
-    latlong TEXT NOT NULL, -- Format: "latitude,longitude"
+    latlong TEXT NOT NULL,
     alamat TEXT NOT NULL,
     bidang_usaha TEXT,
+    is_deleted INTEGER DEFAULT 0,
     
     -- Audit Trail (Mandatory sesuai DatabaseRule.md)
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    created_by TEXT,                -- UUID User pembuat
+    created_by TEXT,
     created_timezone TEXT DEFAULT 'Asia/Jakarta',
     
     updated_at DATETIME,
-    updated_by TEXT,                -- UUID User pengubah terakhir
+    updated_by TEXT,
     updated_timezone TEXT DEFAULT 'Asia/Jakarta'
 );
 
--- Index untuk mempermudah pencarian nama
+-- 3. Kloning data
+INSERT INTO customer_new (
+    id, name, company, telepon, email, latlong, alamat, bidang_usaha, 
+    created_at, created_by, created_timezone, updated_at, updated_by, updated_timezone
+)
+SELECT 
+    id, name, company, telepon, email, latlong, alamat, bidang_usaha, 
+    created_at, created_by, created_timezone, updated_at, updated_by, updated_timezone
+FROM customer 
+WHERE id IS NOT NULL;
+
+-- 4. Hapus tabel lama
+DROP TABLE IF EXISTS customer;
+
+-- 5. Ubah tabel bayangan menjadi tabel utama
+ALTER TABLE customer_new RENAME TO customer;
+
+-- 6. Index
 CREATE INDEX IF NOT EXISTS idx_customer_name ON customer(name);
 
--- Trigger untuk pembaruan updated_at otomatis
+-- 7. Trigger
 CREATE TRIGGER IF NOT EXISTS customer_update_audit
 AFTER UPDATE ON customer
 FOR EACH ROW
@@ -44,3 +82,5 @@ BEGIN
   SET updated_at = CURRENT_TIMESTAMP 
   WHERE id = OLD.id;
 END;
+
+PRAGMA foreign_keys = ON;

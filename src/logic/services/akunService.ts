@@ -17,7 +17,7 @@ export const akunService = {
    * Mengambil semua data akun dari database.
    */
   async getAll(): Promise<IAkun[]> {
-    const sql = `SELECT * FROM akun ORDER BY created_at DESC`;
+    const sql = `SELECT * FROM akun WHERE is_deleted = 0 OR is_deleted IS NULL ORDER BY created_at DESC`;
     try {
       const result = await dbClient.query(sql);
       return (result.rows as any[]).map((row) => ({
@@ -48,7 +48,7 @@ export const akunService = {
     const params: any[] = [];
     const countParams: any[] = [];
     
-    const conditions: string[] = [];
+    const conditions: string[] = [`(is_deleted = 0 OR is_deleted IS NULL)`];
 
     if (search) {
       conditions.push(`(username LIKE ? OR jabatan LIKE ? OR peran LIKE ? OR kode_akses LIKE ? OR telepon LIKE ? OR akses_modul LIKE ?)`);
@@ -284,13 +284,7 @@ export const akunService = {
    */
   async delete(id: string): Promise<boolean> {
     try {
-      const existing = await this.getById(id);
-      if (existing && existing.foto_profil) {
-        const oldKey = existing.foto_profil.split('.io/').pop();
-        if (oldKey) await storageService.delete(oldKey);
-      }
-
-      const sql = `DELETE FROM akun WHERE id = ?`;
+      const sql = `UPDATE akun SET is_deleted = 1 WHERE id = ?`;
       await dbClient.query(sql, [id]);
       return true;
     } catch (error) {
@@ -305,18 +299,8 @@ export const akunService = {
   async deleteMany(ids: string[]): Promise<boolean> {
     if (ids.length === 0) return true;
     try {
-      // Ambil semua data untuk hapus foto di storage
       const placeholders = ids.map(() => '?').join(',');
-      const sqlSelect = `SELECT foto_profil FROM akun WHERE id IN (${placeholders})`;
-      const res = await dbClient.query(sqlSelect, ids);
-      
-      const photosToDelete = (res.rows as any[]).map(r => r.foto_profil).filter(p => !!p);
-      for (const photo of photosToDelete) {
-        const key = photo.split('.io/').pop();
-        if (key) await storageService.delete(key);
-      }
-
-      const sqlDelete = `DELETE FROM akun WHERE id IN (${placeholders})`;
+      const sqlDelete = `UPDATE akun SET is_deleted = 1 WHERE id IN (${placeholders})`;
       await dbClient.query(sqlDelete, ids);
       return true;
     } catch (error) {
@@ -345,7 +329,7 @@ export const akunService = {
       return { success: true, session };
     }
 
-    const sql = `SELECT * FROM akun WHERE kode_akses = ? LIMIT 1`;
+    const sql = `SELECT * FROM akun WHERE kode_akses = ? AND (is_deleted = 0 OR is_deleted IS NULL) LIMIT 1`;
     try {
       const result = await dbClient.query(sql, [kode_akses]);
       if (result.rows.length === 0) {
@@ -425,7 +409,7 @@ export const akunService = {
    * Mengambil semua akun yang memiliki peran 'User' dan memiliki akses ke modul 'Pengiriman'.
    */
   async getDrivers(): Promise<IAkun[]> {
-    const sql = `SELECT * FROM akun WHERE peran = 'User' AND akses_modul LIKE '%Pengiriman%' ORDER BY username ASC`;
+    const sql = `SELECT * FROM akun WHERE peran = 'User' AND akses_modul LIKE '%Pengiriman%' AND (is_deleted = 0 OR is_deleted IS NULL) ORDER BY username ASC`;
     try {
       const result = await dbClient.query(sql);
       return (result.rows as any[]).map((row) => ({
@@ -446,7 +430,7 @@ export const akunService = {
   async isUsernameTaken(username: string, excludeId?: string): Promise<boolean> {
     if (username.toLowerCase() === 'superadmin') return true;
 
-    let sql = `SELECT COUNT(*) as total FROM akun WHERE username = ?`;
+    let sql = `SELECT COUNT(*) as total FROM akun WHERE username = ? AND (is_deleted = 0 OR is_deleted IS NULL)`;
     const params: any[] = [username];
     
     if (excludeId) {
@@ -470,7 +454,7 @@ export const akunService = {
   async isKodeAksesTaken(kode_akses: string, excludeId?: string): Promise<boolean> {
     if (kode_akses === 'spadmin') return true;
 
-    let sql = `SELECT COUNT(*) as total FROM akun WHERE kode_akses = ?`;
+    let sql = `SELECT COUNT(*) as total FROM akun WHERE kode_akses = ? AND (is_deleted = 0 OR is_deleted IS NULL)`;
     const params: any[] = [kode_akses];
     
     if (excludeId) {

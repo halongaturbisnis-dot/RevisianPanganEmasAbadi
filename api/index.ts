@@ -43,6 +43,30 @@ async function runMigrations() {
     }
 
     try {
+      const tableInfoCustomer = await dbClient.query("PRAGMA table_info(customer)");
+      if (!(tableInfoCustomer?.rows || []).some((col: any) => col.name === "is_deleted")) {
+        await dbClient.query("ALTER TABLE customer ADD COLUMN is_deleted INTEGER DEFAULT 0");
+        console.log("[Migration] Column 'is_deleted' added to customer.");
+      }
+    } catch (err: any) { console.warn("[Migration Warning] Alter customer error:", err?.message); }
+
+    try {
+      const tableInfoSuplier = await dbClient.query("PRAGMA table_info(suplier)");
+      if (!(tableInfoSuplier?.rows || []).some((col: any) => col.name === "is_deleted")) {
+        await dbClient.query("ALTER TABLE suplier ADD COLUMN is_deleted INTEGER DEFAULT 0");
+        console.log("[Migration] Column 'is_deleted' added to suplier.");
+      }
+    } catch (err: any) { console.warn("[Migration Warning] Alter suplier error:", err?.message); }
+
+    try {
+      const tableInfoAkun = await dbClient.query("PRAGMA table_info(akun)");
+      if (!(tableInfoAkun?.rows || []).some((col: any) => col.name === "is_deleted")) {
+        await dbClient.query("ALTER TABLE akun ADD COLUMN is_deleted INTEGER DEFAULT 0");
+        console.log("[Migration] Column 'is_deleted' added to akun.");
+      }
+    } catch (err: any) { console.warn("[Migration Warning] Alter akun error:", err?.message); }
+
+    try {
       await dbClient.query(`
         CREATE TABLE IF NOT EXISTS stok_terbuang (
           id TEXT PRIMARY KEY DEFAULT (

@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS suplier_new (
     bank_name TEXT,
     no_rekening TEXT,
     nama_pemilik_rekening TEXT,                
+    is_deleted INTEGER DEFAULT 0,
     
     -- Audit Trail
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

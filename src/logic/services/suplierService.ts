@@ -17,7 +17,7 @@ export const suplierService = {
    * Cocok untuk dropdown atau data berjumlah sedikit.
    */
   async getAll(): Promise<ISuplier[]> {
-    const sql = `SELECT * FROM suplier ORDER BY name ASC`;
+    const sql = `SELECT * FROM suplier WHERE is_deleted = 0 OR is_deleted IS NULL ORDER BY name ASC`;
     try {
       const result = await dbClient.query(sql);
       return result.rows as unknown as ISuplier[];
@@ -48,10 +48,12 @@ export const suplierService = {
     const countParams: any[] = [];
 
     if (search) {
-      whereClause = `WHERE name LIKE ? OR telepon LIKE ? OR email LIKE ? OR alamat LIKE ? OR bank_name LIKE ?`;
+      whereClause = `WHERE (name LIKE ? OR telepon LIKE ? OR email LIKE ? OR alamat LIKE ? OR bank_name LIKE ?) AND (is_deleted = 0 OR is_deleted IS NULL)`;
       const searchParam = `%${search}%`;
       params.push(searchParam, searchParam, searchParam, searchParam, searchParam);
       countParams.push(searchParam, searchParam, searchParam, searchParam, searchParam);
+    } else {
+      whereClause = `WHERE is_deleted = 0 OR is_deleted IS NULL`;
     }
 
     // White list for sort keys
@@ -193,7 +195,7 @@ export const suplierService = {
    * Menghapus suplier.
    */
   async delete(id: string): Promise<boolean> {
-    const sql = `DELETE FROM suplier WHERE id = ?`;
+    const sql = `UPDATE suplier SET is_deleted = 1 WHERE id = ?`;
     try {
       await dbClient.query(sql, [id]);
       return true;

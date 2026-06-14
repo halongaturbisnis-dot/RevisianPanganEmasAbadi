@@ -17,7 +17,7 @@ export const customerService = {
    * Cocok untuk dropdown atau data berjumlah sedikit.
    */
   async getAll(): Promise<ICustomer[]> {
-    const sql = `SELECT * FROM customer ORDER BY name ASC`;
+    const sql = `SELECT * FROM customer WHERE is_deleted = 0 OR is_deleted IS NULL ORDER BY name ASC`;
     try {
       const result = await dbClient.query(sql);
       return result.rows as unknown as ICustomer[];
@@ -48,10 +48,12 @@ export const customerService = {
     const countParams: any[] = [];
 
     if (search) {
-      whereClause = `WHERE name LIKE ? OR telepon LIKE ? OR email LIKE ? OR alamat LIKE ? OR company LIKE ? OR bidang_usaha LIKE ?`;
+      whereClause = `WHERE (name LIKE ? OR telepon LIKE ? OR email LIKE ? OR alamat LIKE ? OR company LIKE ? OR bidang_usaha LIKE ?) AND (is_deleted = 0 OR is_deleted IS NULL)`;
       const searchParam = `%${search}%`;
       params.push(searchParam, searchParam, searchParam, searchParam, searchParam, searchParam);
       countParams.push(searchParam, searchParam, searchParam, searchParam, searchParam, searchParam);
+    } else {
+      whereClause = `WHERE is_deleted = 0 OR is_deleted IS NULL`;
     }
 
     // White list for sort keys
@@ -191,7 +193,7 @@ export const customerService = {
    * Menghapus customer.
    */
   async delete(id: string): Promise<boolean> {
-    const sql = `DELETE FROM customer WHERE id = ?`;
+    const sql = `UPDATE customer SET is_deleted = 1 WHERE id = ?`;
     try {
       await dbClient.query(sql, [id]);
       return true;
