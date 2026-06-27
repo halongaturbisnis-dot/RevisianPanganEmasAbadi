@@ -75,7 +75,9 @@ export const reportService = {
           p.id, 
           p.sales_id, p.sales_name, p.invoice_number, p.customer_id,
           p.sum_product_price, p.sum_added_cost, p.discount_type, p.discount_value, p.discount_amount, p.grand_total,
-          p.payment_type, p.deposit, p.outstanding, p.sla_date,
+          p.payment_type, 
+          COALESCE((SELECT SUM(amount) FROM pemasukan WHERE sales_id = p.id), 0) as deposit,
+          p.sla_date,
           p.payment_method, p.bank_cash_source_id, p.payment_proof_fileurls, p.keterangan, p.status, p.invoice_pdf_url,
           p.approver_id, p.approver_name, p.approval_status, p.approval_signature_url, p.approval_at, p.approval_note,
           p.created_at, p.created_by, p.created_timezone, p.updated_at, p.updated_by, p.updated_timezone,
@@ -89,7 +91,12 @@ export const reportService = {
       `;
       
       const salesRes = await dbClient.query(sqlSales, [startDate, endDate]);
-      const sales = salesRes.rows as unknown as (ITs_Penjualan & { customer_name: string })[];
+      const rawSales = salesRes.rows as any[];
+      
+      const sales = rawSales.map(s => ({
+        ...s,
+        outstanding: (s.grand_total || 0) - (s.deposit || 0)
+      })) as unknown as (ITs_Penjualan & { customer_name: string })[];
 
       // 2. Fetch all products for these sales to calculate top products and margin details
       const salesIds = sales.map(s => s.id);
